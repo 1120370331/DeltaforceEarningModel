@@ -408,8 +408,6 @@
                                 <th onclick="sortRankings('ri_star')">三角洲收益指数(RI*) <span class="sort-indicator"></span></th>
                                 <th onclick="sortRankings('j1')">每分钟期望净收益(J₁) <span class="sort-indicator"></span></th>
                                 <th onclick="sortRankings('j2')">每单位成本期望净收益(J₂) <span class="sort-indicator"></span></th>
-                                <th>风险调整后净收益(ΔR<sub>adj</sub>)</th>
-                                <th>有效总成本(C<sub>eff</sub>)</th>
                                 <th>综合评级</th>
                             </tr>
                         </thead>
@@ -626,8 +624,6 @@
                         <td>${(metric.ri_star || 0).toFixed(3)}</td>
                         <td>${(metric.j1 || 0).toFixed(3)}</td>
                         <td>${(metric.j2 || 0).toFixed(3)}</td>
-                        <td>${(metric.deltaR_adj || 0).toFixed(3)}</td>
-                        <td>${(metric.c_eff || 0).toFixed(3)}</td>
                         <td class="rank-${rank.toLowerCase()}">${rank}</td>
                     </tr>
                 `;

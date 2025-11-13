@@ -590,8 +590,12 @@
                     C: 200, AL: 100, AR: 300, SR: 0.4, T: 25
                 },
                 {
+                    name: '绝密堵撤离点',
+                    C: 100, AL: 30, AR: 400, SR: 0.75, T: 30
+                },
+                {
                     name: '绝密避战跑刀',
-                    C: 70, AL: 0, AR: 160, SR: 0.5, T: 15
+                    C: 60, AL: 0, AR: 175, SR: 0.5, T: 20
                 },
                 {
                     name: '经济学绝密跑刀',
@@ -656,12 +660,12 @@
                 if (strategy.name.includes('跑刀')) {
                     workingParams.AR = strategy.AR * 1.3;
                     workingParams.SR = Math.min(1.0, strategy.SR + 0.1);
-                } else if (strategy.name.includes('猛攻')) {
+                } else if (strategy.name.includes('猛攻') || strategy.name.includes('堵撤离点')) {
                     workingParams.SR = Math.max(0.1, strategy.SR - 0.1);
                 }
             } else if (currentScenario === 'expert') {
                 // 技术高手：猛攻策略撤离率+0.1，收益+30%，时长-20%
-                if (strategy.name.includes('猛攻')) {
+                if (strategy.name.includes('猛攻') || strategy.name.includes('堵撤离点')) {
                     workingParams.AR = strategy.AR * 1.3;
                     workingParams.SR = Math.min(1.0, strategy.SR + 0.1);
                     workingParams.T = strategy.T * 0.8;
@@ -832,11 +836,11 @@
 
         // 图表相关功能
         function createEarningsChart() {
-            // 只选择5个主要策略
+            // 只选择5个主要策略（更新绝密跑刀数据）
             const chartStrategies = [
                 { name: '全装猛攻', C: 250, AL: 200, AR: 400, SR: 1/3, T: 25, color: '#9C27B0' },
                 { name: '玻璃大炮猛攻', C: 120, AL: 50, AR: 200, SR: 0.5, T: 25, color: '#F44336' },
-                { name: '绝密避战跑刀', C: 70, AL: 0, AR: 160, SR: 0.5, T: 15, color: '#FF9800' },
+                { name: '绝密避战跑刀', C: 60, AL: 0, AR: 175, SR: 0.5, T: 20, color: '#FF9800' },
                 { name: '机密大坝速撤', C: 15, AL: 0, AR: 35, SR: 0.7, T: 5, color: '#2196F3' },
                 { name: '普通经济学', C: 0, AL: 0, AR: 4, SR: 1.0, T: 2.5, color: '#4CAF50' }
             ];
@@ -849,11 +853,11 @@
                     if (strategy.name.includes('跑刀')) {
                         workingParams.AR = strategy.AR * 1.3;
                         workingParams.SR = Math.min(1.0, strategy.SR + 0.1);
-                    } else if (strategy.name.includes('猛攻')) {
+                    } else if (strategy.name.includes('猛攻') || strategy.name.includes('堵撤离点')) {
                         workingParams.SR = Math.max(0.1, strategy.SR - 0.1);
                     }
                 } else if (currentScenario === 'expert') {
-                    if (strategy.name.includes('猛攻')) {
+                    if (strategy.name.includes('猛攻') || strategy.name.includes('堵撤离点')) {
                         workingParams.AR = strategy.AR * 1.3;
                         workingParams.SR = Math.min(1.0, strategy.SR + 0.1);
                         workingParams.T = strategy.T * 0.8;
@@ -1019,7 +1023,8 @@
             const chartStrategies = [
                 { name: '全装猛攻', C: 250, AL: 200, AR: 400, SR: 1/3, T: 25 },
                 { name: '玻璃大炮猛攻', C: 120, AL: 50, AR: 200, SR: 0.5, T: 25 },
-                { name: '绝密避战跑刀', C: 70, AL: 0, AR: 160, SR: 0.5, T: 15 },
+                { name: '绝密堵撤离点', C: 100, AL: 30, AR: 400, SR: 0.75, T: 30 },
+                { name: '绝密避战跑刀', C: 60, AL: 0, AR: 175, SR: 0.5, T: 20 },
                 { name: '机密大坝速撤', C: 15, AL: 0, AR: 35, SR: 0.7, T: 5 },
                 { name: '普通经济学', C: 0, AL: 0, AR: 4, SR: 1.0, T: 2.5 }
             ];
@@ -1036,11 +1041,11 @@
                     if (strategy.name.includes('跑刀')) {
                         params.AR = strategy.AR * 1.3;
                         params.SR = Math.min(1.0, strategy.SR + 0.1);
-                    } else if (strategy.name.includes('猛攻')) {
+                    } else if (strategy.name.includes('猛攻') || strategy.name.includes('堵撤离点')) {
                         params.SR = Math.max(0.1, strategy.SR - 0.1);
                     }
                 } else if (currentScenario === 'expert') {
-                    if (strategy.name.includes('猛攻')) {
+                    if (strategy.name.includes('猛攻') || strategy.name.includes('堵撤离点')) {
                         params.AR = strategy.AR * 1.3;
                         params.SR = Math.min(1.0, strategy.SR + 0.1);
                         params.T = strategy.T * 0.8;
@@ -1074,7 +1079,7 @@
 
         // 更新图表
         function updateChart() {
-            if (window.earningsChart) {
+            if (window.earningsChart && typeof window.earningsChart.destroy === 'function') {
                 window.earningsChart.destroy();
             }
             createEarningsChart();

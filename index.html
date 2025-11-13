@@ -293,6 +293,93 @@
             color: #7f8c8d;
             font-style: italic;
         }
+
+        /* 图表相关样式 */
+        .chart-container {
+            position: relative;
+            height: 500px;
+            margin: 30px 0;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .key-insights {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+
+        .key-insights h3 {
+            margin-top: 0;
+            color: #1976d2;
+            margin-bottom: 15px;
+        }
+
+        .key-insights ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .key-insights li {
+            margin: 10px 0;
+            line-height: 1.5;
+        }
+
+        .chart-data-table {
+            margin: 30px 0;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .chart-data-table h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .chart-data-table table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 auto;
+            max-width: 800px;
+        }
+
+        .chart-data-table th,
+        .chart-data-table td {
+            border: 1px solid #bdc3c7;
+            padding: 12px 8px;
+            text-align: center;
+        }
+
+        .chart-data-table th {
+            background: #34495e;
+            color: white;
+            font-weight: bold;
+        }
+
+        .chart-data-table .positive {
+            background: #d5f4e6;
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .chart-data-table .negative {
+            background: #fadbd8;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .chart-data-table .zero {
+            background: #f8f9fa;
+            color: #7f8c8d;
+        }
     </style>
 </head>
 <body>
@@ -436,9 +523,51 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 收益曲线图 -->
+            <div class="step" id="chart-section">
+                <h2 class="step-title">收益曲线对比</h2>
+                <p style="text-align: center; margin-bottom: 20px; font-size: 1.1em;">
+                    各流派不计时间成本的累计净收益对比（装备成本 vs 实际收益）
+                </p>
+
+                <div class="chart-container">
+                    <canvas id="earningsChart"></canvas>
+                </div>
+
+                <div class="key-insights">
+                    <h3>📊 核心洞察</h3>
+                    <ul>
+                        <li><strong>全装猛攻</strong>：单局收益最高，但装备成本巨大，需要较多局数才能盈利</li>
+                        <li><strong>玻璃大炮猛攻</strong>：装备成本适中，收益稳定，是猛攻类中性价比最高的</li>
+                        <li><strong>绝密跑刀</strong>：初期需要较多投入，但长期收益稳定，适合有耐心的玩家</li>
+                        <li><strong>机密大坝速撤</strong>：成本极低，快速盈利，是新手和资金有限玩家的最佳选择</li>
+                        <li><strong>普通经济学</strong>：零成本，稳定收益，虽然单局收益低但无风险</li>
+                    </ul>
+                </div>
+
+                <div class="chart-data-table">
+                    <h4>📈 60分钟收益数据对比</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>策略</th>
+                                <th>局数</th>
+                                <th>装备总成本</th>
+                                <th>期望总收益</th>
+                                <th>累计净收益</th>
+                            </tr>
+                        </thead>
+                        <tbody id="chartTableBody">
+                            <!-- 数据将通过JavaScript生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Global state
         let kappa = 1.0; // 时间机会成本参数
@@ -700,6 +829,271 @@
 
             updateRankings();
         }
+
+        // 图表相关功能
+        function createEarningsChart() {
+            // 只选择5个主要策略
+            const chartStrategies = [
+                { name: '全装猛攻', C: 250, AL: 200, AR: 400, SR: 1/3, T: 25, color: '#9C27B0' },
+                { name: '玻璃大炮猛攻', C: 120, AL: 50, AR: 200, SR: 0.5, T: 25, color: '#F44336' },
+                { name: '绝密避战跑刀', C: 70, AL: 0, AR: 160, SR: 0.5, T: 15, color: '#FF9800' },
+                { name: '机密大坝速撤', C: 15, AL: 0, AR: 35, SR: 0.7, T: 5, color: '#2196F3' },
+                { name: '普通经济学', C: 0, AL: 0, AR: 4, SR: 1.0, T: 2.5, color: '#4CAF50' }
+            ];
+
+            // 应用情景调整
+            function applyScenarioToStrategy(strategy) {
+                let workingParams = { ...strategy };
+
+                if (currentScenario === 'runner') {
+                    if (strategy.name.includes('跑刀')) {
+                        workingParams.AR = strategy.AR * 1.3;
+                        workingParams.SR = Math.min(1.0, strategy.SR + 0.1);
+                    } else if (strategy.name.includes('猛攻')) {
+                        workingParams.SR = Math.max(0.1, strategy.SR - 0.1);
+                    }
+                } else if (currentScenario === 'expert') {
+                    if (strategy.name.includes('猛攻')) {
+                        workingParams.AR = strategy.AR * 1.3;
+                        workingParams.SR = Math.min(1.0, strategy.SR + 0.1);
+                        workingParams.T = strategy.T * 0.8;
+                    }
+                }
+
+                return workingParams;
+            }
+
+            // 计算单局净收益（不计时间成本）
+            function calculateNetProfit(strategy) {
+                const params = applyScenarioToStrategy(strategy);
+                const deltaR = params.AR - params.AL;
+                const expectedRevenue = deltaR * params.SR;
+                return expectedRevenue - params.C;
+            }
+
+            // 生成60分钟数据
+            function generateChartData() {
+                const datasets = [];
+                const timePoints = [];
+
+                // 生成0-60分钟，每5分钟一个点
+                for (let minutes = 0; minutes <= 60; minutes += 5) {
+                    timePoints.push(minutes);
+                }
+
+                chartStrategies.forEach((strategy, index) => {
+                    const netProfit = calculateNetProfit(strategy);
+                    const data = [];
+                    const gameCount = [];
+
+                    timePoints.forEach(minutes => {
+                        const games = Math.floor(minutes / applyScenarioToStrategy(strategy).T);
+                        const totalProfit = games * netProfit;
+                        data.push(totalProfit);
+                        gameCount.push(games);
+                    });
+
+                    datasets.push({
+                        label: strategy.name,
+                        data: data,
+                        borderColor: strategy.color,
+                        backgroundColor: strategy.color + '20',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.1,
+                        pointRadius: 4,
+                        pointHoverRadius: 7
+                    });
+                });
+
+                return { timePoints, datasets, gameCount };
+            }
+
+            // 创建图表
+            const ctx = document.getElementById('earningsChart').getContext('2d');
+            const { timePoints, datasets, gameCount } = generateChartData();
+
+            window.earningsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: timePoints,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '各流派累计净收益曲线（不计时间成本）',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            },
+                            padding: 20
+                        },
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                title: function(context) {
+                                    return `游戏时间：${context[0].label} 分钟`;
+                                },
+                                label: function(context) {
+                                    const strategyIndex = context.datasetIndex;
+                                    const games = gameCount[strategyIndex][context.dataIndex];
+                                    const profit = context.parsed.y;
+                                    return [
+                                        `${context.dataset.label}`,
+                                        `局数：${games} 局`,
+                                        `累计净收益：${profit.toFixed(1)} 万`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: '游戏时间（分钟）',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: '累计净收益（万）',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return value + ' 万';
+                                }
+                            },
+                            grid: {
+                                color: function(context) {
+                                    if (context.tick.value === 0) {
+                                        return '#e74c3c';
+                                    }
+                                    return '#e0e0e0';
+                                },
+                                lineWidth: function(context) {
+                                    if (context.tick.value === 0) {
+                                        return 2;
+                                    }
+                                    return 1;
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+        }
+
+        // 生成60分钟数据表格
+        function generateChartTable() {
+            const chartStrategies = [
+                { name: '全装猛攻', C: 250, AL: 200, AR: 400, SR: 1/3, T: 25 },
+                { name: '玻璃大炮猛攻', C: 120, AL: 50, AR: 200, SR: 0.5, T: 25 },
+                { name: '绝密避战跑刀', C: 70, AL: 0, AR: 160, SR: 0.5, T: 15 },
+                { name: '机密大坝速撤', C: 15, AL: 0, AR: 35, SR: 0.7, T: 5 },
+                { name: '普通经济学', C: 0, AL: 0, AR: 4, SR: 1.0, T: 2.5 }
+            ];
+
+            const tableBody = document.getElementById('chartTableBody');
+            tableBody.innerHTML = '';
+
+            chartStrategies.forEach(strategy => {
+                const row = tableBody.insertRow();
+
+                // 应用情景调整
+                let params = { ...strategy };
+                if (currentScenario === 'runner') {
+                    if (strategy.name.includes('跑刀')) {
+                        params.AR = strategy.AR * 1.3;
+                        params.SR = Math.min(1.0, strategy.SR + 0.1);
+                    } else if (strategy.name.includes('猛攻')) {
+                        params.SR = Math.max(0.1, strategy.SR - 0.1);
+                    }
+                } else if (currentScenario === 'expert') {
+                    if (strategy.name.includes('猛攻')) {
+                        params.AR = strategy.AR * 1.3;
+                        params.SR = Math.min(1.0, strategy.SR + 0.1);
+                        params.T = strategy.T * 0.8;
+                    }
+                }
+
+                const games = Math.floor(60 / params.T);
+                const totalCost = strategy.C * games;
+                const deltaR = params.AR - params.AL;
+                const expectedRevenue = deltaR * params.SR;
+                const totalRevenue = expectedRevenue * games;
+                const netProfit = totalRevenue - totalCost;
+
+                row.insertCell(0).textContent = strategy.name;
+                row.insertCell(1).textContent = games;
+                row.insertCell(2).textContent = totalCost.toFixed(0);
+                row.insertCell(3).textContent = totalRevenue.toFixed(0);
+
+                const profitCell = row.insertCell(4);
+                profitCell.textContent = netProfit.toFixed(0);
+
+                if (netProfit > 0) {
+                    profitCell.className = 'positive';
+                } else if (netProfit < 0) {
+                    profitCell.className = 'negative';
+                } else {
+                    profitCell.className = 'zero';
+                }
+            });
+        }
+
+        // 更新图表
+        function updateChart() {
+            if (window.earningsChart) {
+                window.earningsChart.destroy();
+            }
+            createEarningsChart();
+            generateChartTable();
+        }
+
+        // 初始化时创建图表
+        function init() {
+            updateRankings();
+            updateDataTable();
+            updateChart();
+        }
+
+        // 修改情景选择函数，添加图表更新
+        const originalSelectScenario = selectScenario;
+        selectScenario = function(scenario) {
+            originalSelectScenario(scenario);
+            updateChart(); // 更新图表
+        };
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', init);

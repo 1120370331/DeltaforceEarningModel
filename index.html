@@ -557,14 +557,6 @@
                         </tbody>
                     </table>
 
-                    <!-- 评级分布统计 -->
-                    <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                        <h4 style="margin-bottom: 10px; color: #2c3e50;">📊 评级分布统计</h4>
-                        <div id="rankDistribution" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                            <!-- 分布统计将通过JavaScript生成 -->
-                        </div>
-                    </div>
-
                     <!-- Data Editor -->
                     <div class="data-editor" id="dataEditor">
                         <h3 style="margin-bottom: 15px;">基础参数编辑 (单位：万哈夫币/分钟)</h3>
@@ -872,45 +864,9 @@
             });
 
             document.getElementById('rankingsBody').innerHTML = html;
-
-            // 更新评级分布统计
-            updateRankDistribution(metrics);
         }
 
-        // 更新评级分布统计
-        function updateRankDistribution(metrics) {
-            const distribution = { S: 0, A: 0, B: 0, C: 0, D: 0 };
-            const total = metrics.length;
-
-            metrics.forEach(metric => {
-                const rank = getRankByRIStar(metric.ri_star);
-                distribution[rank]++;
-            });
-
-            const distributionHtml = Object.entries(distribution).map(([rank, count]) => {
-                const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
-                const colors = {
-                    S: '#e74c3c',
-                    A: '#f39c12',
-                    B: '#27ae60',
-                    C: '#3498db',
-                    D: '#95a5a6'
-                };
-
-                return `
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <div style="width: 20px; height: 20px; background: ${colors[rank]}; border-radius: 3px; font-weight: bold; color: white; text-align: center; line-height: 20px; font-size: 12px;">
-                            ${rank}
-                        </div>
-                        <span style="font-weight: bold; color: #2c3e50;">${rank}级:</span>
-                        <span style="color: #666;">${count}个 (${percentage}%)</span>
-                    </div>
-                `;
-            }).join('');
-
-            document.getElementById('rankDistribution').innerHTML = distributionHtml;
-        }
-
+        
         // Update data table
         function updateDataTable() {
             let html = '';

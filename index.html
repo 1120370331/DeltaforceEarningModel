@@ -588,18 +588,6 @@
                     <canvas id="earningsChart"></canvas>
                 </div>
 
-                <div class="key-insights">
-                    <h3>📊 核心洞察</h3>
-                    <ul>
-                        <li><strong>全装猛攻</strong>：单局收益最高，但装备成本巨大，需要较多局数才能盈利</li>
-                        <li><strong>玻璃大炮猛攻</strong>：装备成本适中，收益稳定，是猛攻类中性价比最高的</li>
-                        <li><strong>绝密堵撤离点</strong>：成本适中，成功率高，收益可观，是平衡型策略的优质选择</li>
-                        <li><strong>绝密避战跑刀</strong>：初期需要较多投入，但长期收益稳定，适合有耐心的玩家</li>
-                        <li><strong>机密大坝速撤</strong>：成本极低，快速盈利，是新手和资金有限玩家的最佳选择</li>
-                        <li><strong>普通经济学</strong>：零成本，稳定收益，虽然单局收益低但无风险</li>
-                    </ul>
-                </div>
-
                 <div class="chart-data-table">
                     <h4 id="chartTableTitle">📈 收益数据对比</h4>
                     <table>
@@ -1205,7 +1193,7 @@
             window.earningsChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: timePoints.map(t => t), // 确保labels是正确的数组
+                    labels: timePoints,
                     datasets: datasets
                 },
                 options: {
@@ -1263,14 +1251,10 @@
                                 }
                             },
                             ticks: {
+                                source: 'data',
                                 autoSkip: false,
-                                maxTicksLimit: SAMPLE_POINTS,
                                 callback: function(value, index, values) {
-                                    // 使用传入的value值，如果value是数值则直接使用
-                                    if (typeof value === 'number' && !isNaN(value)) {
-                                        return value + ' 分';
-                                    }
-                                    // 否则使用索引计算
+                                    // 使用索引计算时间值
                                     const timeValue = index * chartInterval;
                                     return timeValue + ' 分';
                                 }

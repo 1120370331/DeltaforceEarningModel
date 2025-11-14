@@ -152,6 +152,44 @@
             background: #c0392b;
         }
 
+        /* 优化悬浮提示样式 */
+        th[title] {
+            position: relative;
+            cursor: help;
+        }
+
+        th[title]:hover::after {
+            content: attr(title);
+            position: absolute;
+            left: 50%;
+            top: 100%;
+            transform: translateX(-50%);
+            background: #2c3e50;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            white-space: pre-line;
+            font-size: 12px;
+            font-weight: normal;
+            z-index: 1000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            max-width: 300px;
+            word-wrap: break-word;
+            margin-top: 5px;
+        }
+
+        th[title]:hover::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 100%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-bottom-color: #2c3e50;
+            z-index: 1001;
+            margin-top: 0;
+        }
+
         .scenario-options {
             display: flex;
             gap: 20px;
@@ -507,17 +545,25 @@
                     <table class="rankings-table" id="rankingsTable">
                         <thead>
                             <tr>
-                                <th onclick="sortRankings('strategy')">策略名称 <span class="sort-indicator"></span></th>
-                                <th onclick="sortRankings('ri_star')">三角洲收益指数(RI*) <span class="sort-indicator"></span></th>
-                                <th onclick="sortRankings('j1')">每分钟期望净收益(J₁) <span class="sort-indicator"></span></th>
-                                <th onclick="sortRankings('j2')">每单位成本期望净收益(J₂) <span class="sort-indicator"></span></th>
-                                <th>综合评级</th>
+                                <th onclick="sortRankings('strategy')" title="点击排序">策略名称 <span class="sort-indicator"></span></th>
+                                <th onclick="sortRankings('ri_star')" title="三角洲收益指数 = (收益-损耗)×撤离率 / ((成本+κ×时间)×时间)&#10;数值越高，单位时间净收益效率越优秀">三角洲收益指数(RI*) <span class="sort-indicator"></span></th>
+                                <th onclick="sortRankings('j1')" title="每分钟期望净收益 = ((收益-损耗)×撤离率 - 成本) / 时间&#10;数值越高，单局时间收益效率越高">每分钟期望净收益(J₁) <span class="sort-indicator"></span></th>
+                                <th onclick="sortRankings('j2')" title="每单位成本期望净收益 = ((收益-损耗)×撤离率 - 成本) / 成本&#10;数值越高，资本使用效率越高">每单位成本期望净收益(J₂) <span class="sort-indicator"></span></th>
+                                <th title="基于三角洲收益指数的综合评级&#10;S级：卓越 (≥0.15)&#10;A级：优秀 (0.08-0.149)&#10;B级：良好 (0.03-0.079)&#10;C级：一般 (0.01-0.029)&#10;D级：较差 (<0.01)">综合评级</th>
                             </tr>
                         </thead>
                         <tbody id="rankingsBody">
                             <!-- Rankings will be populated by JavaScript -->
                         </tbody>
                     </table>
+
+                    <!-- 评级分布统计 -->
+                    <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                        <h4 style="margin-bottom: 10px; color: #2c3e50;">📊 评级分布统计</h4>
+                        <div id="rankDistribution" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                            <!-- 分布统计将通过JavaScript生成 -->
+                        </div>
+                    </div>
 
                     <!-- Data Editor -->
                     <div class="data-editor" id="dataEditor">
@@ -757,19 +803,45 @@
             };
         }
 
-        // Get rank based on RI* value using paper's classification (Section 3.2)
+        // Get rank based on RI* value with adaptive thresholds for balanced distribution
         function getRankByRIStar(ri_star) {
-            if (ri_star >= 0.20) return 'S';  // S级：高效率 (RI* ≥ 0.20)
-            if (ri_star >= 0.05) return 'A';  // A级：中高效率 (0.05 ≤ RI* < 0.20)
-            return 'B';  // B级：低效率 (RI* < 0.05)
+            // 固定阈值确保稳定性
+            if (ri_star >= 0.15) return 'S';  // S级：卓越 (RI* ≥ 0.15)
+            if (ri_star >= 0.08) return 'A';  // A级：优秀 (0.08 ≤ RI* < 0.15)
+            if (ri_star >= 0.03) return 'B';  // B级：良好 (0.03 ≤ RI* < 0.08)
+            if (ri_star >= 0.01) return 'C';  // C级：一般 (0.01 ≤ RI* < 0.03)
+            return 'D';  // D级：较差 (RI* < 0.01)
+        }
+
+        // 动态调整阈值的评级算法（可选实现）
+        function getRankByRIStarAdaptive(ri_star, allRiStars) {
+            if (!allRiStars || allRiStars.length === 0) {
+                return getRankByRIStar(ri_star); // 回退到固定阈值
+            }
+
+            // 排序并计算百分位数
+            const sorted = [...allRiStars].sort((a, b) => b - a);
+            const n = sorted.length;
+
+            // 使用百分位数设置阈值
+            const thresholds = {
+                S: sorted[Math.floor(n * 0.15)] || 0.15,  // 前15%为S级
+                A: sorted[Math.floor(n * 0.35)] || 0.08,  // 15%-35%为A级
+                B: sorted[Math.floor(n * 0.65)] || 0.03,  // 35%-65%为B级
+                C: sorted[Math.floor(n * 0.85)] || 0.01,  // 65%-85%为C级
+                D: 0 // 剩余为D级
+            };
+
+            if (ri_star >= thresholds.S) return 'S';
+            if (ri_star >= thresholds.A) return 'A';
+            if (ri_star >= thresholds.B) return 'B';
+            if (ri_star >= thresholds.C) return 'C';
+            return 'D';
         }
 
         // Update rankings display
         function updateRankings() {
             const metrics = gameData.strategies.map(s => calculateDeltaEarningMetrics(s));
-
-            console.log('updateRankings called, currentSort:', currentSort); // Debug
-            console.log('Metrics before sort:', metrics.map(m => ({name: m.name, [currentSort.column]: m[currentSort.column]}))); // Debug
 
             // Apply current sorting
             metrics.sort((a, b) => {
@@ -780,12 +852,8 @@
                 const aVal = aValue !== undefined ? aValue : -Infinity;
                 const bVal = bValue !== undefined ? bValue : -Infinity;
 
-                const result = currentSort.direction === 'desc' ? bVal - aVal : aVal - bVal;
-                console.log(`Sorting: ${a.name}(${aVal}) vs ${b.name}(${bVal}) = ${result}`); // Debug
-                return result;
+                return currentSort.direction === 'desc' ? bVal - aVal : aVal - bVal;
             });
-
-            console.log('Metrics after sort:', metrics.map(m => m.name)); // Debug
 
             // Generate HTML
             let html = '';
@@ -804,6 +872,43 @@
             });
 
             document.getElementById('rankingsBody').innerHTML = html;
+
+            // 更新评级分布统计
+            updateRankDistribution(metrics);
+        }
+
+        // 更新评级分布统计
+        function updateRankDistribution(metrics) {
+            const distribution = { S: 0, A: 0, B: 0, C: 0, D: 0 };
+            const total = metrics.length;
+
+            metrics.forEach(metric => {
+                const rank = getRankByRIStar(metric.ri_star);
+                distribution[rank]++;
+            });
+
+            const distributionHtml = Object.entries(distribution).map(([rank, count]) => {
+                const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+                const colors = {
+                    S: '#e74c3c',
+                    A: '#f39c12',
+                    B: '#27ae60',
+                    C: '#3498db',
+                    D: '#95a5a6'
+                };
+
+                return `
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 20px; height: 20px; background: ${colors[rank]}; border-radius: 3px; font-weight: bold; color: white; text-align: center; line-height: 20px; font-size: 12px;">
+                            ${rank}
+                        </div>
+                        <span style="font-weight: bold; color: #2c3e50;">${rank}级:</span>
+                        <span style="color: #666;">${count}个 (${percentage}%)</span>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('rankDistribution').innerHTML = distributionHtml;
         }
 
         // Update data table
@@ -868,16 +973,12 @@
 
         // Sort rankings
         function sortRankings(column) {
-            console.log('sortRankings called with column:', column); // Debug
-
             if (currentSort.column === column) {
                 currentSort.direction = currentSort.direction === 'desc' ? 'asc' : 'desc';
             } else {
                 currentSort.column = column;
                 currentSort.direction = 'desc';
             }
-
-            console.log('New sort state:', currentSort); // Debug
 
             // Update sort indicators
             document.querySelectorAll('.sort-indicator').forEach(indicator => {
